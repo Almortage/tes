@@ -1,74 +1,77 @@
-
-
-from pyrogram import Client, filters
-from pyrogram.types import Message
-from telegraph import upload_file
+import asyncio
 import os
+import re
+from pyrogram import filters, Client
+from pyrogram.enums import *
+from pyrogram.errors import *
+from Mohamedhelal import *
+from config import *
+from pyrogram.types import *
+from pyrogram.errors import *
 
-teletips=Client(
-    "MediaToTelegraphLink",
-    api_id = int(os.environ["API_ID"]),
-    api_hash = os.environ["API_HASH"],
-    bot_token = os.environ["BOT_TOKEN"]
-)
-
-@teletips.on_message(filters.command('start') & filters.private)
-async def start(client, message):
-    text = f"""
-اهلا {message.from_user.mention},
-🔮أنا هنا لإنشاء روابط التلجراف لملفات الوسائط الخاصة بك.
-
-👨🏼‍💻ما عليك سوى إرسال ملف وسائط صالح مباشرة إلى هذه الدردشة.
-♻️انواع الملفات الصالحه هي:- 'jpeg', 'jpg', 'png', 'mp4' and 'gif'.
-
-🌐لأنشاء الروابط في **المجموعات**,اضفني لمجموعه خارقه اي عامه وارسل الامر <code>/tl</code> ردا علي ملف وسائط صالح.
-🖥 | [AlmortagelTech🌀](https://t.me/AlmortagelTech)
-
-☣️ | [ALMORTAGEL](https://t.me/Almortagel_12)
-            """
-    await teletips.send_message(message.chat.id, text, disable_web_page_preview=True)
-    
-
-@teletips.on_message(filters.media & filters.private)
-async def get_link_private(client, message):
+#جلسه
+@app.on_message(filters.regex("^صنع جلسه$")& ~filters.channel)
+async def bot(client, message):
+    chat = message.chat
+    number = await app.ask(chat.id, "من فضلك ارسل لي رقم هاتفك +201142****** هكذا")
+    phone = number.text.strip()
     try:
-        text = await message.reply("🔮انتظر قليلا...")
-        async def progress(current, total):
-            await text.edit_text(f"📥 جاري التنزيل... {current * 100 / total:.1f}%")
-        try:
-            location = f"./media/private/"
-            local_path = await message.download(location, progress=progress)
-            await text.edit_text("📤 جاري الرفع الي التليجراف...")
-            upload_path = upload_file(local_path) 
-            await text.edit_text(f"**🌐 | رابط التليجراف**:\n\n<code>https://telegra.ph{upload_path[0]}</code>")     
-            os.remove(local_path) 
-        except Exception as e:
-            await text.edit_text(f"**❌ | فشل رفع الملف**\n\n<i>**Reason**: {e}</i>")
-            os.remove(local_path) 
-            return                 
-    except Exception:
-        pass        
-
-@teletips.on_message(filters.command('tl'))
-async def get_link_group(client, message):
+        glsa = Client(":memory:", api_id=6,api_hash="eb06d4abfb49dc3eeb1aeb98ae0f581e")
+    except Exception as e:
+        await message.reply_text(f"**ERROR:** `{str(e)}`")
+        return
     try:
-        text = await message.reply("🔮انتظر قليلا...")
-        async def progress(current, total):
-            await text.edit_text(f"📥 جاري التنزيل... {current * 100 / total:.1f}%")
+        await glsa.connect()
+    except ConnectionError:
+        await glsa.disconnect()
+        await glsa.connect()
+    try:
+        code = await glsa.send_code(phone)
+        await asyncio.sleep(2)
+    except PhoneNumberInvalid:
+        await message.reply_text("الرقم الهاتف خطاء ❌")
+        return
+
+    try:
+        otp = await app.ask(
+            chat.id, ("تم ارسال لك رمز O T P, "
+                      "من فضلك ارسل لي كود OTP بهذه الطريقه `1 2 3 4 5` __(راعي تواجد مسافه بين كل رقم من 5 ارقام)__"), timeout=300)
+
+    except TimeoutError:
+        await message.reply_text("تجاوزة 5 دقائق من فضلك حاول مره اخره")
+        return
+    otp_code = otp.text
+    try:
+        await glsa.sign_in(phone, code.phone_code_hash, phone_code=' '.join(str(otp_code)))
+    except PhoneCodeInvalid:
+        await message.reply_text("رمز OTP خطاء ")
+        return
+    except PhoneCodeExpired:
+        await message.reply_text("OTP is Expired.")
+        return
+    except SessionPasswordNeeded:
         try:
-            location = f"./media/group/"
-            local_path = await message.reply_to_message.download(location, progress=progress)
-            await text.edit_text("📤 جاري الرفع الي التليجراف...")
-            upload_path = upload_file(local_path) 
-            await text.edit_text(f"**🌐 | رابط التليجراف**:\n\n<code>https://telegra.ph{upload_path[0]}</code>")     
-            os.remove(local_path) 
+            two_step_code = await app.ask(
+                chat.id,
+                "حسابك يستخدم التحقق بخطوتين.\nمن فضلك ارسل لي الباسورد.",
+                timeout=300
+            )
+        except TimeoutError:
+            await message.reply_text("تجاوزة 5 دقائق من فضلك حاول مره اخره")
+            return
+        new_code = two_step_code.text
+        try:
+            await glsa.check_password(new_code)
         except Exception as e:
-            await text.edit_text(f"**❌ | فشل رفع الملف**\n\n<i>**Reason**: {e}</i>")
-            os.remove(local_path) 
-            return         
-    except Exception:
-        pass                                           
-
-print("البوت شغال!")
-teletips.run()
-
+            await message.reply_text(f"**ERROR:** `{str(e)}`")
+            return
+    except Exception as e:
+        await message.reply_text(f"**ERROR:** `{str(e)}`")
+        return
+    try:
+        session_string = await glsa.export_session_string()
+    except Exception as e:
+        await message.reply_text(f"**ERROR:** `{str(e)}`")
+        return
+    await message.reply_text(f"جلسه بايروجرام اصدار {pyrover} :\n{session_string}")
+    await glsa.disconnect()
