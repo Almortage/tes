@@ -4,7 +4,7 @@ import re
 from pyrogram import filters, Client
 from pyrogram.enums import *
 from pyrogram.errors import *
-from Mohamedhelal import *
+from telegraph import *
 from config import *
 from pyrogram.types import *
 from pyrogram.errors import *
