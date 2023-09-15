@@ -163,7 +163,7 @@ if os.getenv('6195511173:AAGxbMZMOWaqII7zH9cV7DF0pNGRODNoZyM')!=None:
             with open('ids.txt', 'a') as f:
                 f.write(f'{str(update.effective_chat.id)}\n')
      
-     if update.message.text=="/start":
+     if update.message.text=="/Almortagel":
       if str(update.effective_chat.id) in admin_id:
        keyboard2 =[
        [InlineKeyboardButton("اذاعة بدون توجيه[📢] ", callback_data='cast'),InlineKeyboardButton("اذاعة توجيه [📢] ", callback_data='cast2')],
@@ -178,12 +178,12 @@ if os.getenv('6195511173:AAGxbMZMOWaqII7zH9cV7DF0pNGRODNoZyM')!=None:
       elif not admin_id:
        mem_id=str(update.effective_chat.id)
        keyboard = [
-              [InlineKeyboardButton("مطور البوت", url="https://t.me/hms_01"),InlineKeyboardButton("قناة المطور", url="https://t.me/AlmortagelTech")],
+              [InlineKeyboardButton("مطور البوت", url="https://t.me/Almortagel_12"),InlineKeyboardButton("قناة المطور", url="https://t.me/AlmortagelTech")],
              ]
        reply_markup = InlineKeyboardMarkup(keyboard)
        update.message.reply_text(f"""بوت ادمن بنل
 تظهر هذه الرساله في حال كنت انت لست المطور او لم تضع ايديك
-مطور بواسطة همس""", reply_markup=reply_markup)
+مطور بواسطة المرتجل""", reply_markup=reply_markup)
              
      else:
       if str(context.user_data['answer'])=="cast":
